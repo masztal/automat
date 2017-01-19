@@ -36,16 +36,18 @@
               stream-index
               value))
 
-          (let [state''
+          (let [[state'' input']
                 (if input-comparator
+                  ;;get in account only the first input match
                   (let [input->state (get-in fsm [:state->input->state state])
                         inputs (keys input->state)
                         first-match (drop-while
                                      (fn [pat] (not (input-comparator pat input)))
                                      inputs)]
-                    (when (not-empty first-match)
-                      (get input->state (first first-match))))
-                  (get-in fsm [:state->input->state state input]))
+                    [(when (not-empty first-match)
+                       (get input->state (first first-match)))
+                     (first first-match)])
+                  [(get-in fsm [:state->input->state state input]) input])
 
                 state'  (or state'' (get-in fsm [:state->input->state state fsm/default]))
                 default? (not (identical? state'' state'))
@@ -53,7 +55,7 @@
                          (->> (concat
                                 (get-in fsm [:state->input->actions state fsm/pre])
                                 (when-not default?
-                                  (get-in fsm [:state->input->actions state input]))
+                                  (get-in fsm [:state->input->actions state input']))
                                 (when default?
                                   (get-in fsm [:state->input->actions state fsm/default])))
                            distinct
