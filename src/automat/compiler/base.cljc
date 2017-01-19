@@ -12,7 +12,8 @@
 
 (def is-identical? #?(:clj identical? :cljs keyword-identical?))
 
-(defn- advance [fsm state stream signal reducers restart?]
+(get [:a  3  4] 2)
+(defn- advance [fsm state stream signal reducers restart? input-comparator]
   (let [signal #(if (is-identical? % ::eof) % (signal %))
         ^CompiledAutomatonState original-state state
         stream (stream/to-stream stream)
@@ -36,7 +37,17 @@
               stream-index
               value))
 
-          (let [state'' (get-in fsm [:state->input->state state input])
+          (let [state''
+                (if input-comparator
+                  (let [input->state (get-in fsm [:state->input->state state])
+                        inputs (keys input->state)
+                        first-match (drop-while
+                                     (fn [pat] (not (input-comparator pat input)))
+                                     inputs)]
+                    (when (not-empty first-match)
+                      (get input->state (first first-match))))
+                  (get-in fsm [:state->input->state state input]))
+
                 state'  (or state'' (get-in fsm [:state->input->state state fsm/default]))
                 default? (not (identical? state'' state'))
                 value' (if state'
@@ -86,7 +97,7 @@
                 (inc stream-index)))))))))
 
 (defn compile
-  [fsm {:keys [reducers signal action-comparator]
+  [fsm {:keys [reducers signal action-comparator input-comparator]
         :or {signal identity}}]
   {:pre [(core/precompiled-automaton? fsm)]}
   (let [initially-accepted? (contains? (:accept fsm) 0)]
@@ -104,10 +115,10 @@
           (let [state (core/->automaton-state this state)]
             (if (.-accepted? ^CompiledAutomatonState state)
               state
-              (advance fsm state stream signal reducers true))))
+              (advance fsm state stream signal reducers true input-comparator))))
         (advance-stream [this state stream reject-value]
           (let [state (core/->automaton-state this state)
-                state' (advance fsm state stream signal reducers false)]
+                state' (advance fsm state stream signal reducers false input-comparator)]
             (if (is-identical? ::reject state')
               reject-value
               state'))))
