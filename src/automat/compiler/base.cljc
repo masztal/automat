@@ -12,7 +12,6 @@
 
 (def is-identical? #?(:clj identical? :cljs keyword-identical?))
 
-(get [:a  3  4] 2)
 (defn- advance [fsm state stream signal reducers restart? input-comparator]
   (let [signal #(if (is-identical? % ::eof) % (signal %))
         ^CompiledAutomatonState original-state state
