@@ -12,6 +12,7 @@
 
 (def is-identical? #?(:clj identical? :cljs keyword-identical?))
 
+;;TODO ADD ANDVANCE ALL
 (defn- advance [fsm state stream signal reducers restart? input-comparator]
   (let [signal #(if (is-identical? % ::eof) % (signal %))
         ^CompiledAutomatonState original-state state
@@ -49,6 +50,7 @@
                      (first first-match)])
                   [(get-in fsm [:state->input->state state input]) input])
 
+                ;;TODO MAP MATCHING INPUTS
                 state'  (or state'' (get-in fsm [:state->input->state state fsm/default]))
                 default? (not (identical? state'' state'))
                 value' (if state'
@@ -61,7 +63,7 @@
                            distinct
                            (map reducers)
                            (remove nil?)
-                           (reduce #(%2 %1 original-input) value))
+                           (reduce #(%2 %1 original-input input') value))
                          value)
                 stream-index' (if (= state 0)
                                 (inc stream-index)
