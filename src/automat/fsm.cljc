@@ -691,24 +691,32 @@
   "Accepts zero or more of the given automaton."
   [fsm]
   ;; remove epsilons before adding more
-  (let [fsm (-> fsm ->dfa ->nfa)]
+  (let [fsm (-> fsm ->dfa ->nfa)
+        start-state (state)]
     (nfa
-      (start fsm)
-      (conj (accept fsm) (start fsm))
+     start-state
+     (conj (accept fsm) start-state)
+     (->
       (reduce
-        #(assoc-in %1 [%2 epsilon] #{(start fsm)})
-        (zipmap* (states fsm) #(input->state fsm %))
-        (accept fsm))
+       #(assoc-in %1 [%2 epsilon] #{(start fsm)})
+       (zipmap* (states fsm) #(input->state fsm %))
+       (accept fsm))
+      (assoc-in [start-state epsilon] #{(start fsm)}))
       (zipmap* (states fsm) #(input->actions fsm %)))))
 
 (defn maybe
   "Accepts one or zero of the given automaton."
   [fsm]
-  ((if (deterministic? fsm) dfa nfa)
-   (start fsm)
-   (conj (accept fsm) (start fsm))
-   (zipmap* (states fsm) #(input->state fsm %))
-   (zipmap* (states fsm) #(input->actions fsm %))))
+  ;; remove epsilons before adding more
+  (let [fsm (-> fsm ->dfa ->nfa)
+        start-state (state)]
+    (nfa
+     start-state
+     (conj (accept fsm) start-state)
+     (->
+      (zipmap* (states fsm) #(input->state fsm %))
+      (assoc-in [start-state epsilon] #{(start fsm)}))
+     (zipmap* (states fsm) #(input->actions fsm %)))))
 
 (defn- merge-fsms [a b accept-states actions]
   (let [a (gensym-states (->dfa a))
