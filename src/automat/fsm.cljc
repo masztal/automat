@@ -3,7 +3,7 @@
   #?(:clj (:use
             [potemkin.types]))
   (:require
-    [clojure.set :as set]
+    [automat.set-wrapper :as set]
     #?(:clj [clojure.core :as clj]
        :cljs [cljs.core :as clj :include-macros true])
     #?(:clj [primitive-math :as p]))
@@ -504,6 +504,7 @@
                             #(let [a' (next-state fsm a %)
                                    b' (next-state fsm b %)]
                                (and
+                                ;;should be pre or ::pre?? (rather not :pre)
                                  (= (actions fsm a :pre) (actions fsm b :pre))
                                  (= (actions fsm a %) (actions fsm b %))
                                  (if (and a' b')
